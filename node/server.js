@@ -74,7 +74,7 @@ CollabTerm.prototype.setupFaye = function(){
     var user = (argv.user) ? argv.user : 'Guest';
     cli.on('line', function(chunk){	
 	var _published = bayeux.getClient().publish(room, {typed:chunk,user:user});
-	var _test = bayeux.getClient().publish('/discovery/112', {typed:chunk,user:user});
+	//var _test = bayeux.getClient().publish('/discovery/112', {typed:chunk,user:user});
 	//console.log('getClient is ', bayeux.getClient());
 	console.log('send '+chunk.red +' to '+ room);
     });
@@ -111,12 +111,12 @@ CollabTerm.prototype.setupFaye = function(){
 	}
     });
    
-    bayeux.getClient().subscribe('/discovery/*', function(message){
+    /*bayeux.getClient().subscribe('/discovery/*', function(message){
 	if(message.channel == _this.host){return;}
 	var reply_to = message.channel+'/reply';
 	console.log('/discovery/* got from '+message.channel,' reply to '+reply_to);
 	bayeux.getClient().publish(message.channel, {channel:message.channel,host:_this.host,port:_this.port,status:200});
-    });
+    });*/
 
     _this.p();
 
