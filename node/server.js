@@ -121,6 +121,14 @@ CollabTerm.prototype.setupFaye = function(){
 };
 
 var CT  = new CollabTerm();
+var os = "default";
+	
 userip1 = "(/usr/sbin/arp $(hostname) | awk -F'[()]' '{print $2}')";
 userip2 = "ifconfig|grep broadcast| cut -f2 -d' '"; 
+
+if(argv.os){
+    if(argv.os == 'ubuntu'){
+	userip2 = "ifconfig|grep Bcast|cut -f2 -d':'|cut -f1 -d' '";
+    }
+}
 exec(userip2, CollabTerm.networkReady(CT));
