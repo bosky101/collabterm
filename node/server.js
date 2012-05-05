@@ -4,6 +4,7 @@ var inspect = require('inspect');
 var cli = require('readline').createInterface(process.stdin, process.stdout, null);
 
 DEBUG=1;
+var clients = [];
 var port = 8765;
 var _log = function(){
     if(DEBUG){
@@ -42,6 +43,7 @@ CollabTerm.prototype.connectToPeers = function(str){
 	var _ok = client.publish(presence,{channel:presence});
 	client.subscribe(presence+'/reply',function(message){
 	    _log('\t OK ',message);
+	    clients.push(client);
 	});
     }
 };
@@ -54,8 +56,6 @@ CollabTerm.prototype.p = function(str){
     }
 };
 
-var client;
-var clients = [];
 CollabTerm.prototype.setupFaye = function(){
     var _this = this;
 
@@ -74,11 +74,15 @@ CollabTerm.prototype.setupFaye = function(){
     var user = (argv.user) ? argv.user : 'Guest';
     cli.on('line', function(chunk){	
 	var _published = bayeux.getClient().publish(room, {typed:chunk,user:user});
+	
+	//console.log('getClient is ', bayeux.getClient());
+
 	console.log('send '+chunk.red);
     });
 
     var _joined = bayeux.getClient().subscribe(room,function(message){
-	console.log('got  '+ message.typed);
+	console.log(room+ ' got  '+ message.typed);
+	
 	process.stdout.write(message.typed.red);
 	if(message.typed){
 	    /*if(message.user == user){
@@ -107,11 +111,12 @@ CollabTerm.prototype.setupFaye = function(){
 	    });
 	}
     });
-
+   
     bayeux.getClient().subscribe('/discovery/*', function(message){
 	var reply_to = message.channel+'/reply';
 	console.log('/discovery/* got from '+message.channel,' reply to '+reply_to);
 	bayeux.getClient().publish(reply_to, {channel:message.channel,host:_this.host,port:_this.port,status:200});
+	
     });
 
     _this.p();
@@ -122,7 +127,7 @@ CollabTerm.prototype.setupFaye = function(){
 	});
 	
 	bayeux.bind('subscribe', function(clientId, channel) {
-	    console.log('[  SUBSCRIBE] ' + clientId + ' -> ' + channel);    
+	    console.log('[  SUBSCRIBE] ' + clientId + ' -> ' + channel+' clients=',clients.length);    
 	});
 	
 	bayeux.bind('publish', function(clientId, channel, data){
@@ -130,7 +135,7 @@ CollabTerm.prototype.setupFaye = function(){
 	});
 	
 	bayeux.bind('unsubscribe', function(clientId, channel) {
-	    console.log('[ UNSUBSCRIBE] ' + clientId + ' -> ' + channel);
+	    console.log('[ UNSUBSCRIBE] ' + clientId + ' -> ' + channel+' clients=',clients.length);
 	});
     }
 
