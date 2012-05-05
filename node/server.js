@@ -63,7 +63,7 @@ CollabTerm.prototype.setupFaye = function(){
     _log('listen on '+_this.host+':'+_this.port);
     app.listen(_this.port,_this.host);
 
-    var bayeux = new faye.NodeAdapter({mount: '/faye', timeout: 5});
+    var bayeux = new faye.NodeAdapter({mount: '/faye', timeout: 45});
     var auth = require('./faye-exts/auth.js');
     bayeux.attach(app);
   
@@ -74,6 +74,7 @@ CollabTerm.prototype.setupFaye = function(){
     var user = (argv.user) ? argv.user : 'Guest';
     cli.on('line', function(chunk){	
 	var _published = bayeux.getClient().publish(room, {typed:chunk,user:user});
+	var _test = bayeux.getClient().publish('/discovery/112', {typed:chunk,user:user});
 	//console.log('getClient is ', bayeux.getClient());
 	console.log('send '+chunk.red +' to '+ room);
     });
@@ -111,6 +112,7 @@ CollabTerm.prototype.setupFaye = function(){
     });
    
     bayeux.getClient().subscribe('/discovery/*', function(message){
+	if(message.channel == _this.host){return;}
 	var reply_to = message.channel+'/reply';
 	console.log('/discovery/* got from '+message.channel,' reply to '+reply_to);
 	bayeux.getClient().publish(reply_to, {channel:message.channel,host:_this.host,port:_this.port,status:200});
