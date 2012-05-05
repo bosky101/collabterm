@@ -3,7 +3,7 @@ var util = require('util'), exec = require('child_process').exec;
 var inspect = require('inspect');
 var cli = require('readline').createInterface(process.stdin, process.stdout, null);
 DEBUG=1;
-
+var port = 8765;
 var _log = function(){
     if(DEBUG){
 	console.log.apply(console.log,arguments);
@@ -17,12 +17,33 @@ var CollabTerm = function(){
 CollabTerm.networkReady = function(_scope){
     return function(error, stdout, stderr) { 
 	var _this = _scope;
-	_this.port = (argv.port) ? argv.port : "8765";
+	_this.port = (argv.port) ? argv.port : port;
 	_this.host = (argv.host) ? argv.host : stdout.replace('\n','');
 	_log('network ready with ',_this.host.length+":"+_this.port);
+	_this.connectToPeers();
 	_this.setupFaye();
     };
 };
+
+CollabTerm.prototype.connectToPeers = function(str){
+    var peers = [];
+    for(var host=0;host<255;host++){
+	var _this = this;
+	var _host = '192.168.10.'+ host;
+	if(_host == _this.host) {
+	    continue;
+	}
+	var location =  'http://'+_host+':'+port;
+	var presence = '/discovery/'+host;
+	_log('connect to faye at ',location,' publish to '+presence);
+	var client = new faye.Client(location+'/faye');
+	var _ok = client.publish(presence,{channel:presence});
+	client.subscribe(presence+'/reply',function(message){
+	    _log('\t OK ',message);
+	});
+    }
+};
+
 CollabTerm.prototype.p = function(str){
     if(!str){
 	process.stdout.write('> '.green);
