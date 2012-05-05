@@ -45,6 +45,11 @@ CollabTerm.prototype.connectToPeers = function(str){
 	    _log('\t OK ',message);
 	    //clients.push(client);
 	});
+	var room = '/'+ ( (argv.room)? argv.room : 'global');
+
+	client.subscribe(room, function(message){
+	    console.log(room+ ' got  '+ message.typed);
+	});
     }
 };
 
@@ -66,21 +71,23 @@ CollabTerm.prototype.setupFaye = function(){
     var bayeux = new faye.NodeAdapter({mount: '/faye', timeout: 45});
     var auth = require('./faye-exts/auth.js');
     bayeux.attach(app);
-  
+
     var room = '/'+ ( (argv.room)? argv.room : 'global');
 
     _log('Faye Listening on ', _this.host + ':'+_this.port+'/faye with room: ',room);
     
     var user = (argv.user) ? argv.user : 'Guest';
+    
     cli.on('line', function(chunk){	
 	var _published = bayeux.getClient().publish(room, {typed:chunk,user:user});
 	//var _test = bayeux.getClient().publish('/discovery/112', {typed:chunk,user:user});
 	//console.log('getClient is ', bayeux.getClient());
 	console.log('send '+chunk.red +' to '+ room);
     });
-
-    bayeux.getClient().subscribe(room,function(message){
+    console.log('subscribe to '+room);
+    bayeux.getClient().subscribe('x'+room,function(message){
 	console.log(room+ ' got  '+ message.typed);
+	return;
 	
 	process.stdout.write(message.typed.red);
 	if(message.typed){
