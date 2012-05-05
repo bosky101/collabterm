@@ -1,8 +1,10 @@
 var express = require('express'), colors = require('colors'), faye = require('faye'), argv = require('optimist').argv, _ = require('underscore');
-var util = require('util'), exec = require('child_process').exec;
+var util = require('util');
 var inspect = require('inspect');
 var cli = require('readline').createInterface(process.stdin, process.stdout, null);
-DEBUG=1;
+
+DEBUG=0;
+var clients = [];
 var port = 8765;
 var _log = function(){
     if(DEBUG){
@@ -19,9 +21,10 @@ CollabTerm.networkReady = function(_scope){
 	var _this = _scope;
 	_this.port = (argv.port) ? argv.port : port;
 	_this.host = (argv.host) ? argv.host : stdout.replace('\n','');
-	_log('network ready with ',_this.host.length+":"+_this.port);
-	_this.connectToPeers();
+	_log('network ready with ',_this.host+":"+_this.port);
+	
 	_this.setupFaye();
+	_this.connectToPeers();
     };
 };
 
@@ -38,9 +41,45 @@ CollabTerm.prototype.connectToPeers = function(str){
 	//_log('connect to faye at ',location,' publish to '+presence);
 	var client = new faye.Client(location+'/faye');
 	var _ok = client.publish(presence,{channel:presence});
-	client.subscribe(presence+'/reply',function(message){
+	client.subscribe(presence,function(message){
 	    _log('\t OK ',message);
+	    //clients.push(client);
 	});
+	var room = '/'+ ( (argv.room)? argv.room : 'global');
+		
+	client.subscribe(room, function(message){
+	    //console.log(room+ ' got  ', message);
+	    
+	    process.stdout.write('['+message.user+'] > '+ message.typed.blue);
+	if(message.typed){
+	    /*if(message.user == user){
+		return;
+	    }*/
+	    /*console.log('publish to '+ room , message);
+	    var _sent = bayeux.getClient().publish(room,{output:_stdout1,user:message.user});
+	    console.log('_sent is ', _sent);
+	    return;
+	    console.log('going to exec :',message.typed+'['+message.typed.length+']');
+	    */
+	    return;
+	    var exec = require('child_process').exec;
+	    exec("ls", function( de_1, de_2, de_3 ){
+		/*console.log(de_2);return;
+		if(_er1 || _stderr1){
+		    console.log('syntax error: ',arguments);
+		    return;
+		}
+		_this.p(message.typed + ' typed gave...\n' + _stdout1);
+		if(message.user == user){
+		    return;
+		}
+		bayeux.getClient().publish(room,{output:_stdout1,user:message.user});
+		*/
+	    });
+	}
+
+	});
+
     }
 };
 
@@ -52,8 +91,6 @@ CollabTerm.prototype.p = function(str){
     }
 };
 
-var client;
-
 CollabTerm.prototype.setupFaye = function(){
     var _this = this;
 
@@ -61,40 +98,28 @@ CollabTerm.prototype.setupFaye = function(){
     _log('listen on '+_this.host+':'+_this.port);
     app.listen(_this.port,_this.host);
 
-    var bayeux = new faye.NodeAdapter({mount: '/faye', timeout: 5});
+    var bayeux = new faye.NodeAdapter({mount: '/faye', timeout: 45});
     var auth = require('./faye-exts/auth.js');
     bayeux.attach(app);
-  
-    _log('Faye Listening on ', _this.host + ':'+_this.port+'/faye');
 
-    var stdin = process.openStdin(); 
-    require('tty').setRawMode(true);    
-    
     var room = '/'+ ( (argv.room)? argv.room : 'global');
-    var user = (argv.user) ? argv.user : 'Guest';
+
+    _log('Faye Listening on ', _this.host + ':'+_this.port+'/faye with room: ',room);
+    
+    
     cli.on('line', function(chunk){	
 	var _published = bayeux.getClient().publish(room, {typed:chunk,user:user});
-	console.log('send '+chunk.red);
+	//var _test = bayeux.getClient().publish('/discovery/112', {typed:chunk,user:user});
+	//console.log('getClient is ', bayeux.getClient());
+	//console.log('send '+chunk.red +' to '+ room);
     });
-
-    var _joined = bayeux.getClient().subscribe(room,function(message){
-	//process.stdout.write(message.typed.red);
-	if(message.typed){
-	    exec(message.typed, function( _er1,_stdout1,_stderr1 ){
-		_this.p(message.typed + ' typed gave...\n' + _stdout1);
-		if(message.user == user){
-		    return;
-		}
-		bayeux.getClient().publish(room,{output:_stdout1,user:message.user});
-	    });
-	}
-    });
-
-    bayeux.getClient().subscribe('/discovery/*', function(message){
+     
+    /*bayeux.getClient().subscribe('/discovery/*', function(message){
+	if(message.channel == _this.host){return;}
 	var reply_to = message.channel+'/reply';
 	console.log('/discovery/* got from '+message.channel,' reply to '+reply_to);
-	bayeux.getClient().publish(reply_to, {channel:message.channel,host:_this.host,port:_this.port,status:200});
-    });
+	bayeux.getClient().publish(message.channel, {channel:message.channel,host:_this.host,port:_this.port,status:200});
+    });*/
 
     _this.p();
 
@@ -104,7 +129,7 @@ CollabTerm.prototype.setupFaye = function(){
 	});
 	
 	bayeux.bind('subscribe', function(clientId, channel) {
-	    console.log('[  SUBSCRIBE] ' + clientId + ' -> ' + channel);    
+	    console.log('[  SUBSCRIBE] ' + clientId + ' -> ' + channel+' clients=',clients.length);    
 	});
 	
 	bayeux.bind('publish', function(clientId, channel, data){
@@ -112,11 +137,34 @@ CollabTerm.prototype.setupFaye = function(){
 	});
 	
 	bayeux.bind('unsubscribe', function(clientId, channel) {
-	    console.log('[ UNSUBSCRIBE] ' + clientId + ' -> ' + channel);
+	    console.log('[ UNSUBSCRIBE] ' + clientId + ' -> ' + channel+' clients=',clients.length);
 	});
     }
 
 };
 
 var CT  = new CollabTerm();
-exec("(/usr/sbin/arp $(hostname) | awk -F'[()]' '{print $2}')", CollabTerm.networkReady(CT));
+var os = "default";
+	
+userip1 = "(/usr/sbin/arp $(hostname) | awk -F'[()]' '{print $2}')";
+userip2 = "ifconfig|grep broadcast| cut -f2 -d' '"; 
+    
+var do_exec = function(str,cb){
+    var exec = require('child_process').exec;
+    return exec(str,cb);
+};
+
+if(argv.os){
+    if(argv.os == 'ubuntu'){
+	userip2 = "ifconfig|grep Bcast|cut -f2 -d':'|cut -f1 -d' '";
+    }
+}
+
+cli.question("Please enter a name > ", function(answer){
+    user = answer;
+
+    /* close */
+    cli.close();
+
+    do_exec(userip2, CollabTerm.networkReady(CT));
+});
