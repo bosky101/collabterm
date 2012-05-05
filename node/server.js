@@ -2,6 +2,7 @@ var express = require('express'), colors = require('colors'), faye = require('fa
 var util = require('util'), exec = require('child_process').exec;
 var inspect = require('inspect');
 var cli = require('readline').createInterface(process.stdin, process.stdout, null);
+
 DEBUG=1;
 var port = 8765;
 var _log = function(){
@@ -19,9 +20,10 @@ CollabTerm.networkReady = function(_scope){
 	var _this = _scope;
 	_this.port = (argv.port) ? argv.port : port;
 	_this.host = (argv.host) ? argv.host : stdout.replace('\n','');
-	_log('network ready with ',_this.host.length+":"+_this.port);
-	_this.connectToPeers();
+	_log('network ready with ',_this.host+":"+_this.port);
+	
 	_this.setupFaye();
+	_this.connectToPeers();
     };
 };
 
@@ -119,4 +121,6 @@ CollabTerm.prototype.setupFaye = function(){
 };
 
 var CT  = new CollabTerm();
-exec("(/usr/sbin/arp $(hostname) | awk -F'[()]' '{print $2}')", CollabTerm.networkReady(CT));
+userip1 = "(/usr/sbin/arp $(hostname) | awk -F'[()]' '{print $2}')";
+userip2 = "ifconfig|grep broadcast| cut -f2 -d' '"; 
+exec(userip2, CollabTerm.networkReady(CT));
