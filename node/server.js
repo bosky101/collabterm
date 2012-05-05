@@ -74,13 +74,11 @@ CollabTerm.prototype.setupFaye = function(){
     var user = (argv.user) ? argv.user : 'Guest';
     cli.on('line', function(chunk){	
 	var _published = bayeux.getClient().publish(room, {typed:chunk,user:user});
-	
 	//console.log('getClient is ', bayeux.getClient());
-
-	console.log('send '+chunk.red);
+	console.log('send '+chunk.red +' to '+ room);
     });
 
-    var _joined = bayeux.getClient().subscribe(room,function(message){
+    bayeux.getClient().subscribe(room,function(message){
 	console.log(room+ ' got  '+ message.typed);
 	
 	process.stdout.write(message.typed.red);
@@ -116,7 +114,6 @@ CollabTerm.prototype.setupFaye = function(){
 	var reply_to = message.channel+'/reply';
 	console.log('/discovery/* got from '+message.channel,' reply to '+reply_to);
 	bayeux.getClient().publish(reply_to, {channel:message.channel,host:_this.host,port:_this.port,status:200});
-	
     });
 
     _this.p();
