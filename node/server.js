@@ -162,6 +162,9 @@ if(argv.os){
 
 cli.question("Please enter a name > ", function(answer){
     user = answer;
+
+    /* close */
     cli.close();
+
     do_exec(userip2, CollabTerm.networkReady(CT));
 });
