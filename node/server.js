@@ -41,9 +41,9 @@ CollabTerm.prototype.connectToPeers = function(str){
 	//_log('connect to faye at ',location,' publish to '+presence);
 	var client = new faye.Client(location+'/faye');
 	var _ok = client.publish(presence,{channel:presence});
-	client.subscribe(presence+'/reply',function(message){
+	client.subscribe(presence,function(message){
 	    _log('\t OK ',message);
-	    clients.push(client);
+	    //clients.push(client);
 	});
     }
 };
@@ -115,7 +115,7 @@ CollabTerm.prototype.setupFaye = function(){
 	if(message.channel == _this.host){return;}
 	var reply_to = message.channel+'/reply';
 	console.log('/discovery/* got from '+message.channel,' reply to '+reply_to);
-	bayeux.getClient().publish(reply_to, {channel:message.channel,host:_this.host,port:_this.port,status:200});
+	bayeux.getClient().publish(message.channel, {channel:message.channel,host:_this.host,port:_this.port,status:200});
     });
 
     _this.p();
