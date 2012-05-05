@@ -35,7 +35,7 @@ CollabTerm.prototype.connectToPeers = function(str){
 	}
 	var location =  'http://'+_host+':'+port;
 	var presence = '/discovery/'+host;
-	_log('connect to faye at ',location,' publish to '+presence);
+	//_log('connect to faye at ',location,' publish to '+presence);
 	var client = new faye.Client(location+'/faye');
 	var _ok = client.publish(presence,{channel:presence});
 	client.subscribe(presence+'/reply',function(message){
