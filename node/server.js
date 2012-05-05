@@ -48,7 +48,7 @@ CollabTerm.prototype.connectToPeers = function(str){
 	var room = '/'+ ( (argv.room)? argv.room : 'global');
 		
 	client.subscribe(room, function(message){
-	    console.log(room+ ' got  ', message);
+	    //console.log(room+ ' got  ', message);
 	    
 	    process.stdout.write('['+message.user+'] > '+ message.typed.blue);
 	if(message.typed){
